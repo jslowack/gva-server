@@ -1,3 +1,6 @@
+require("babel-core/register");
+require("babel-polyfill");
+
 import express from 'express';
 import multer from 'multer';
 import cors from 'cors';
@@ -15,7 +18,7 @@ const COLLECTION_NAME = 'images';
 const UPLOAD_PATH_FOLDER = 'uploads';
 const UPLOAD_PATH = path.join(__dirname, UPLOAD_PATH_FOLDER);
 const memStorage = multer.memoryStorage();
-const upload = multer({ dest: `${UPLOAD_PATH}/`, fileFilter: imageFilter, storage: memStorage }); // multer configuration
+const upload = multer({ dest: `${UPLOAD_PATH}/`, fileFilter: imageFilter }); // multer configuration
 const db = new Loki(`${UPLOAD_PATH}/${DB_NAME}`, { persistenceMethod: 'fs' });
 
 // app
@@ -28,22 +31,25 @@ app.listen(port, function () {
 });
 app.use('/'+UPLOAD_PATH_FOLDER, express.static(UPLOAD_PATH));
 
-async function createThumbnail(buffer, fileName){
-    const filePath = path.join(UPLOAD_PATH, fileName);
+function createThumbnail(originalFile, fileName){
+    console.log(originalFile);
+    console.log(fileName);
     const maxSize = 256;
-    sharp(buffer)
+    sharp(originalFile)
         .resize(maxSize, maxSize)
-        .toFile(filePath);
+        .toFile(fileName);
+    console.log("end");
 }
 
 
 app.post('/peopleadd', upload.single('image'), async function (req, res) {
     try {
         const col = await loadCollection(COLLECTION_NAME, db);
-        const fileName = (req.file && req.file.buffer) ? shortid.generate() : null;
+        const fileName = (req.file && req.file.path) ? req.file.path+'thumb' : null;
+        console.log(req.file);
         const data = col.insert(
             { 
-                image: fileName,
+                image: req.file.filename+'thumb',
                 userInfo: {
                     'name': req.body.name,
                     'email': req.body.email,
@@ -51,11 +57,14 @@ app.post('/peopleadd', upload.single('image'), async function (req, res) {
                 }
             }
         );
-
+        console.log("e");
+        
         db.saveDatabase();
+        console.log("e")
+        console.log(req.file.buffer)
 
         if (fileName)
-            createThumbnail(req.file.buffer, fileName);
+            createThumbnail(req.file.path, fileName);
         
         res.send({ id: data.$loki, fileName: data.image, userInfo: data.userInfo });
     } catch (err) {
