@@ -1,4 +1,17 @@
 {
-  "presets": [ "es2015", "stage-0" ],
-  "plugins": ["syntax-async-functions", "transform-regenerator", "transform-object-rest-spread"]
+  "presets": [
+    "es2015",
+    "stage-0"
+  ],
+  "plugins": [
+    "syntax-async-functions",
+    "transform-regenerator",
+    "transform-object-rest-spread",
+    [
+      "babel-plugin-dotenv",
+      {
+        "replacedModuleName": "babel-dotenv"
+      }
+    ]
+  ]
 }
